@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { noteDraft } from "../index";
+import { noteBodySchema, noteDraft } from "../index";
 import { MAX_NOTE_LENGTH } from "~/lib/notes";
 
 describe("noteDraft", () => {
@@ -23,7 +23,11 @@ describe("noteDraft", () => {
   });
 
   it("refuses to save an empty or whitespace-only note", () => {
-    expect(noteDraft("")).toMatchObject({ empty: true, canSave: false });
+    expect(noteDraft("")).toMatchObject({
+      empty: true,
+      tooLong: false,
+      canSave: false,
+    });
     expect(noteDraft("   \n\t")).toMatchObject({ empty: true, canSave: false });
   });
 
@@ -37,6 +41,7 @@ describe("noteDraft", () => {
   it("refuses a note one character over the limit", () => {
     expect(noteDraft("a".repeat(MAX_NOTE_LENGTH + 1))).toMatchObject({
       tooLong: true,
+      empty: false,
       canSave: false,
     });
   });
@@ -64,5 +69,25 @@ describe("noteDraft", () => {
       unchanged: false,
       canSave: true,
     });
+  });
+});
+
+describe("noteBodySchema", () => {
+  it("stores the note trimmed", () => {
+    expect(noteBodySchema.parse("  my note \n")).toBe("my note");
+  });
+
+  it("refuses a whitespace-only note, saying what to do", () => {
+    const parsed = noteBodySchema.safeParse(" \n ");
+    expect(parsed.error?.issues[0]?.message).toBe(
+      "Write something before saving your note."
+    );
+  });
+
+  it("refuses a note over the limit, saying it was not saved", () => {
+    const parsed = noteBodySchema.safeParse("a".repeat(MAX_NOTE_LENGTH + 1));
+    expect(parsed.error?.issues[0]?.message).toBe(
+      "Your note is over 2,000 characters, so it was not saved."
+    );
   });
 });

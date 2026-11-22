@@ -1,4 +1,5 @@
 import { MAX_NOTE_LENGTH } from "~/lib/notes";
+import { noteBody, noteText } from "./rules";
 
 export type NoteDraft = {
   length: number;
@@ -9,21 +10,23 @@ export type NoteDraft = {
   canSave: boolean;
 };
 
-// The server trims before it checks the limit and before it stores the note,
-// so whitespace at the ends neither counts, nor makes an otherwise empty note
-// savable, nor makes a saved note look edited.
+// Judged by the same schema the server parses with, so whitespace at the ends
+// neither counts, nor makes an otherwise empty note savable, nor makes a saved
+// note look edited.
 export function describeDraft(body: string, saved: string): NoteDraft {
-  const text = body.trim();
-  const length = text.length;
-  const tooLong = length > MAX_NOTE_LENGTH;
-  const empty = length === 0;
+  const text = noteText.parse(body);
+  const parsed = noteBody.safeParse(body);
+  // trim, min and max cannot fail together, so there is at most one issue.
+  const failure = parsed.error?.issues[0].code;
+  const tooLong = failure === "too_big";
+  const empty = failure === "too_small";
   const unchanged = text === saved;
   return {
-    length,
+    length: text.length,
     max: MAX_NOTE_LENGTH,
     tooLong,
     empty,
     unchanged,
-    canSave: !tooLong && !empty && !unchanged,
+    canSave: parsed.success && !unchanged,
   };
 }

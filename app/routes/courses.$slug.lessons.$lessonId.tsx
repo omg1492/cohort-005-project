@@ -16,7 +16,7 @@ import {
 import { defaultNotifications } from "~/lib/notifications.server";
 import { isBookmarked, toggleBookmark } from "~/lib/bookmarks.server";
 import { getNote, saveNote } from "~/lib/notes.server";
-import { MAX_NOTE_LENGTH } from "~/lib/notes";
+import { noteBodySchema } from "~/modules/lesson-notes";
 import { type RenderedComment } from "~/components/comment-thread";
 import { db } from "~/db";
 import {
@@ -57,16 +57,7 @@ const editCommentSchema = z.object({
   body: z.string(),
 });
 
-const saveNoteSchema = z.object({
-  body: z
-    .string()
-    .trim()
-    .min(1, "Write something before saving your note.")
-    .max(
-      MAX_NOTE_LENGTH,
-      `Your note is over ${MAX_NOTE_LENGTH.toLocaleString("en")} characters, so it was not saved.`
-    ),
-});
+const saveNoteSchema = z.object({ body: noteBodySchema });
 
 const lessonParamsSchema = z.object({
   lessonId: z.coerce.number().int().positive(),
