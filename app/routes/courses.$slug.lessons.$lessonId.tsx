@@ -43,7 +43,7 @@ import { LockedLesson } from "~/components/lesson-viewer/locked-lesson";
 import { FullLesson } from "~/components/lesson-viewer/full-lesson";
 import { data } from "react-router";
 import { z } from "zod";
-import { parseFormData } from "~/lib/validation";
+import { parseFormData, parseParams } from "~/lib/validation";
 
 const createCommentSchema = z.object({
   intent: z.literal("create-comment"),
@@ -67,6 +67,38 @@ const saveNoteSchema = z.object({
       `Your note is over ${MAX_NOTE_LENGTH.toLocaleString("en")} characters, so it was not saved.`
     ),
 });
+
+const lessonParamsSchema = z.object({
+  lessonId: z.coerce.number().int().positive(),
+});
+
+const submitQuizSchema = z.object({
+  quizId: z.coerce.number().int().positive(),
+});
+
+const QUIZ_ANSWER_PREFIX = "question-";
+
+// A quiz answer arrives as a field named for its question, whose value is
+// the chosen option: `question-<questionId>=<optionId>`.
+const quizAnswerSchema = z.tuple([
+  z.coerce.number().int().positive(),
+  z.coerce.number().int().positive(),
+]);
+
+function parseQuizAnswers(formData: FormData): Record<number, number> {
+  const selectedAnswers: Record<number, number> = {};
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith(QUIZ_ANSWER_PREFIX)) continue;
+    const parsed = quizAnswerSchema.safeParse([
+      key.slice(QUIZ_ANSWER_PREFIX.length),
+      value,
+    ]);
+    if (!parsed.success) throw data("Invalid quiz answer", { status: 400 });
+    const [questionId, optionId] = parsed.data;
+    selectedAnswers[questionId] = optionId;
+  }
+  return selectedAnswers;
+}
 
 const deleteCommentSchema = z.object({
   intent: z.literal("delete-comment"),
@@ -327,7 +359,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   const { course, person, enrolled, view, take, manage } = decisions;
   const currentUserId = person?.id ?? null;
-  const lessonId = Number(params.lessonId);
+  const { lessonId } = parseParams(params, lessonParamsSchema);
 
   const courseWithDetails = getCourseWithDetails(course.id);
   const lesson = getLessonById(lessonId);
@@ -394,12 +426,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     : false;
   const note = currentUserId ? getNote(db, currentUserId, lessonId) : undefined;
 
-  // Render lesson content from Markdown to HTML server-side
   const contentHtml = lesson.content
     ? await renderMarkdown(lesson.content)
     : null;
 
-  // Build prev/next navigation
   const allLessons = flattenCourseLessons(courseWithDetails);
   const currentIndex = allLessons.findIndex((l) => l.id === lessonId);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
@@ -459,7 +489,7 @@ export async function action({ params, request }: Route.ActionArgs) {
     ref
   );
   const currentUserId = person.id;
-  const lessonId = Number(params.lessonId);
+  const { lessonId } = parseParams(params, lessonParamsSchema);
 
   if (
     intent === "create-comment" ||
@@ -571,32 +601,21 @@ export async function action({ params, request }: Route.ActionArgs) {
   }
 
   if (intent === "submit-quiz") {
-    const quizId = Number(formData.get("quizId"));
-    if (isNaN(quizId)) {
+    const parsedQuiz = parseFormData(formData, submitQuizSchema);
+    if (!parsedQuiz.success) {
       throw data("Invalid quiz ID", { status: 400 });
     }
+    const { quizId } = parsedQuiz.data;
     // Scope the quiz to this lesson so a quiz elsewhere can't be reached by
     // posting its id to this route.
     if (!isQuizOnLesson(db, quizId, lessonId)) {
       throw data("Quiz not found", { status: 404 });
     }
 
-    // Collect answers: form fields named "question-{questionId}" with value = optionId
-    const selectedAnswers: Record<number, number> = {};
-    for (const [key, value] of formData.entries()) {
-      if (key.startsWith("question-")) {
-        const questionId = Number(key.replace("question-", ""));
-        const optionId = Number(value);
-        if (!isNaN(questionId) && !isNaN(optionId)) {
-          selectedAnswers[questionId] = optionId;
-        }
-      }
-    }
-
     const result = submitQuizAttempt(db, {
       studentId: currentUserId,
       quizId,
-      selectedAnswers,
+      selectedAnswers: parseQuizAnswers(formData),
     });
     if (!result) {
       throw data("Failed to score quiz", { status: 500 });
