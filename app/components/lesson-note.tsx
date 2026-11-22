@@ -47,8 +47,7 @@ export function LessonNote({ note }: { note: LessonNoteData }) {
   const [body, setBody] = useState(note?.body ?? "");
   const isSaving = fetcher.state !== "idle";
   const error = fetcher.data?.error;
-  const draft = noteDraft(body);
-  const unchanged = body === (note?.body ?? "");
+  const draft = noteDraft(body, note?.body);
 
   return (
     <Card className="mb-8">
@@ -70,7 +69,7 @@ export function LessonNote({ note }: { note: LessonNoteData }) {
             <Button
               type="submit"
               size="sm"
-              disabled={isSaving || !draft.canSave || unchanged}
+              disabled={isSaving || !draft.canSave}
             >
               {isSaving ? "Saving..." : "Save note"}
             </Button>

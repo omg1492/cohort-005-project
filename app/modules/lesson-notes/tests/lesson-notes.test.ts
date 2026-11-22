@@ -40,4 +40,25 @@ describe("noteDraft", () => {
       canSave: false,
     });
   });
+
+  it("refuses to save a note that matches the saved one", () => {
+    expect(noteDraft("my note", "my note")).toMatchObject({
+      unchanged: true,
+      canSave: false,
+    });
+  });
+
+  it("treats whitespace at the ends as no change, as the server trims it", () => {
+    expect(noteDraft("  my note \n", "my note")).toMatchObject({
+      unchanged: true,
+      canSave: false,
+    });
+  });
+
+  it("allows saving an edit to the saved note", () => {
+    expect(noteDraft("my note, edited", "my note")).toMatchObject({
+      unchanged: false,
+      canSave: true,
+    });
+  });
 });
