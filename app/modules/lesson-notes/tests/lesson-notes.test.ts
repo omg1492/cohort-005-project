@@ -55,6 +55,10 @@ describe("noteDraft", () => {
     });
   });
 
+  it("treats a blank box as unchanged when nothing is saved yet", () => {
+    expect(noteDraft("")).toMatchObject({ unchanged: true, canSave: false });
+  });
+
   it("allows saving an edit to the saved note", () => {
     expect(noteDraft("my note, edited", "my note")).toMatchObject({
       unchanged: false,
