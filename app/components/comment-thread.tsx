@@ -76,8 +76,11 @@ function CommentForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.state, fetcher.data, intent]);
 
-  const tooLong = body.length > MAX_COMMENT_LENGTH;
-  const empty = body.trim().length === 0;
+  // The server trims before it checks the limit, so the count does too, as the
+  // notes counter does.
+  const length = body.trim().length;
+  const tooLong = length > MAX_COMMENT_LENGTH;
+  const empty = length === 0;
 
   return (
     <fetcher.Form method="post" className="space-y-2">
@@ -121,7 +124,7 @@ function CommentForm({
             tooLong ? "text-destructive" : "text-muted-foreground"
           )}
         >
-          {body.length} / {MAX_COMMENT_LENGTH}
+          {length} / {MAX_COMMENT_LENGTH}
         </span>
       </div>
 
