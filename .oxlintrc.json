@@ -149,6 +149,10 @@
       "files": [
         "app/components/comment-thread.tsx",
         "app/components/dev-ui.tsx",
+        "app/components/lesson-viewer/curriculum-sidebar.tsx",
+        "app/components/lesson-viewer/full-lesson.tsx",
+        "app/components/lesson-viewer/locked-lesson.tsx",
+        "app/components/lesson-viewer/quiz-section.tsx",
         "app/components/monaco-markdown-editor.tsx",
         "app/components/notification-feed.tsx",
         "app/components/sidebar.tsx",
