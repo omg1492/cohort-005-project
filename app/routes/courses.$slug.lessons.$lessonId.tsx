@@ -6,40 +6,28 @@ import {
   type CourseRef,
   type DenialReason,
 } from "~/modules/permissions/course-permissions.server";
-
 import { renderComment } from "~/lib/comment-markdown.server";
-
 import { markdown, type Markdown } from "~/lib/text";
-
 import {
   createComment,
   deleteComment,
   editComment,
 } from "~/lib/comments.server";
-
 import { defaultNotifications } from "~/lib/notifications.server";
-
 import { isBookmarked, toggleBookmark } from "~/lib/bookmarks.server";
-
 import { getNote, saveNote } from "~/lib/notes.server";
-
 import { MAX_NOTE_LENGTH } from "~/lib/notes";
-
 import { type RenderedComment } from "~/components/comment-thread";
-
 import { db } from "~/db";
-
 import {
   completeLesson,
   visitLesson,
 } from "~/modules/lesson-progress/index.server";
-
 import {
   getLessonQuiz,
   isQuizOnLesson,
   submitQuizAttempt,
 } from "~/modules/lesson-quiz/index.server";
-
 import {
   categories,
   comments,
@@ -49,19 +37,12 @@ import {
   users,
   UserRole,
 } from "~/db/schema";
-
 import { asc, eq, or } from "drizzle-orm";
-
 import { renderMarkdown } from "~/lib/markdown.server";
-
 import { LockedLesson } from "~/components/lesson-viewer/locked-lesson";
-
 import { FullLesson } from "~/components/lesson-viewer/full-lesson";
-
 import { data } from "react-router";
-
 import { z } from "zod";
-
 import { parseFormData } from "~/lib/validation";
 
 const createCommentSchema = z.object({
